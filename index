@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>한글 배우기 - Korean Learning App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            min-height: 100vh;
+            padding: 16px;
+        }
+
+        .container {
+            max-width: 448px;
+            margin: 0 auto;
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        /* Turtle Character */
+        .turtle {
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .turtle-body {
+            position: relative;
+            width: 64px;
+            height: 48px;
+            background: #4ade80;
+            border-radius: 50%;
+        }
+
+        .turtle-head {
+            position: absolute;
+            top: -8px;
+            left: 24px;
+            width: 32px;
+            height: 32px;
+            background: #86efac;
+            border-radius: 50%;
+        }
+
+        .turtle-eye {
+            position: absolute;
+            top: 8px;
+            width: 4px;
+            height: 4px;
+            background: black;
+            border-radius: 50%;
+        }
+
+        .turtle-eye.left {
+            left: 4px;
+        }
+
+        .turtle-eye.right {
+            right: 4px;
+        }
+
+        .turtle-mouth {
+            position: absolute;
+            bottom: 4px;
+            left: 8px;
+            width: 16px;
+            height: 4px;
+            border-bottom: 2px solid black;
+            border-radius: 0 0 50% 50%;
+        }
+
+        .turtle-mouth.sad {
+            border-bottom: none;
+            border-top: 2px solid black;
+            border-radius: 50% 50% 0 0;
+        }
+
+        .turtle-spot {
+            position: absolute;
+            background: #16a34a;
+            border-radius: 50%;
+            opacity: 0.3;
+        }
+
+        .spot1 {
+            top: 4px;
+            left: 8px;
+            width: 12px;
+            height: 12px;
+        }
+
+        .spot2 {
+            top: 12px;
+            left: 24px;
+            width: 8px;
+            height: 8px;
+        }
+
+        .spot3 {
+            top: 4px;
+            right: 8px;
+            width: 8px;
+            height: 8px;
+        }
+
+        /* Cards and Buttons */
+        .card {
+            background: white;
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            margin-bottom: 24px;
+        }
+
+        .menu-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            margin-bottom: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .menu-card:hover:not(.locked) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .menu-card.completed {
+            background: #f0fdf4;
+            border-color: #86efac;
+        }
+
+        .menu-card.locked {
+            background: #f3f4f6;
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .menu-card-content {
+            display: flex;
+            align-items: center;
+        }
+
+        .menu-icon {
+            font-size: 48px;
+            margin-right: 16px;
+            padding: 16px;
+            border-radius: 16px;
+            background: #f0fdf4;
+        }
+
+        .menu-card.completed .menu-icon {
+            background: #dcfce7;
+        }
+
+        .menu-card.locked .menu-icon {
+            background: #e5e7eb;
+        }
+
+        .menu-text {
+            flex: 1;
+        }
+
+        .menu-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1f2937;
+            margin-bottom: 4px;
+        }
+
+        .menu-card.locked .menu-title {
+            color: #6b7280;
+        }
+
+        .menu-description {
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .menu-card.locked .menu-description {
+            color: #9ca3af;
+        }
+
+        .btn {
+            padding: 16px 32px;
+            border: none;
+            border-radius: 16px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+        }
+
+        .btn-primary {
+            background: #22c55e;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #16a34a;
+        }
+
+        .btn-secondary {
+            background: #a855f7;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #9333ea;
+        }
+
+        .btn-yellow {
+            background: #eab308;
+            color: white;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+
+        .btn-icon {
+            background: white;
+            border-radius: 50%;
+            padding: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border: none;
+            cursor: pointer;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            padding-top: 32px;
+        }
+
+        .header h1 {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1f2937;
+        }
+
+        /* Progress */
+        .progress-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .progress-item span {
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .progress-check {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #d1d5db;
+            border-radius: 50%;
+            position: relative;
+        }
+
+        .progress-check.completed {
+            background: #22c55e;
+            border-color: #22c55e;
+        }
+
+        .progress-check.completed::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 12px;
+            background: #dcfce7;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #22c55e;
+            transition: width 0.5s ease;
+        }
+
+        /* Quiz Options */
+        .quiz-options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .quiz-option {
+            padding: 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 16px;
+            background: white;
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .quiz-option:hover {
+            border-color: #86efac;
+        }
+
+        /* Korean Character Display */
+        .korean-char {
+            font-size: 128px;
+            font-weight: bold;
+            color: #1f2937;
+            text-align: center;
+            margin: 32px 0;
+        }
+
+        .korean-char-small {
+            font-size: 64px;
+            font-weight: bold;
+            color: #1f2937;
+        }
+
+        /* Word Components */
+        .word-component {
+            background: #f9fafb;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .component-visual {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .component-char {
+            padding: 12px;
+            border-radius: 12px;
+            font-size: 24px;
+            font-weight: bold;
+            border: 2px solid;
+        }
+
+        .consonant {
+            background: #dbeafe;
+            border-color: #93c5fd;
+            color: #1e40af;
+        }
+
+        .vowel {
+            background: #fecaca;
+            border-color: #f87171;
+            color: #dc2626;
+        }
+
+        .result {
+            background: #dcfce7;
+            border-color: #86efac;
+            color: #16a34a;
+        }
+
+        .component-text {
+            text-align: center;
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .container {
+                padding: 0 8px;
+            }
+            
+            .korean-char {
+                font-size: 96px;
+            }
+        }
+
+        /* Center text utility */
+        .text-center {
+            text-align: center;
+        }
+
+        .mb-4 {
+            margin-bottom: 16px;
+        }
+
+        .mb-6 {
+            margin-bottom: 24px;
+        }
+
+        .mb-8 {
+            margin-bottom: 32px;
+        }
+
+        .mt-4 {
+            margin-top: 16px;
+        }
+
+        .mt-6 {
+            margin-top: 24px;
+        }
+
+        .text-2xl {
+            font-size: 24px;
+        }
+
+        .text-3xl {
+            font-size: 32px;
+        }
+
+        .font-bold {
+            font-weight: bold;
+        }
+
+        .text-gray-600 {
+            color: #6b7280;
+        }
+
+        .text-gray-800 {
+            color: #1f2937;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Home Screen -->
+        <div id="home-screen" class="screen active">
+            <div class="text-center mb-8" style="padding-top: 32px;">
+                <div class="turtle" style="width: 128px; height: 128px; margin-bottom: 16px;">
+                    <div class="turtle-body" style="width: 64px; height: 48px;">
+                        <div class="turtle-head">
+                            <div class="turtle-eye left"></div>
+                            <div class="turtle-eye right"></div>
+                            <div class="turtle-mouth"></div>
+                        </div>
+                        <div class="turtle-spot spot1"></div>
+                        <div class="turtle-spot spot2"></div>
+                        <div class="turtle-spot spot3"></div>
+                    </div>
+                </div>
+                <h1 class="text-3xl font-bold text-gray-800 mb-4">한글 배우기</h1>
+                <p class="text-gray-600">거북이와 함께 한글을 배워요!</p>
+            </div>
+
+            <div class="card">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                    <h2 style="font-size: 18px; font-weight: bold; color: #1f2937;">Level <span id="current-level">1</span> Progress</h2>
+                    <div style="display: flex; align-items: center;">
+                        <span style="color: #eab308; margin-right: 4px;">⭐</span>
+                        <span id="total-points" style="color: #d97706; font-weight: bold;">0</span>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 16px;">
+                    <div class="progress-item">
+                        <span>자음 학습</span>
+                        <div id="consonants-check" class="progress-check"></div>
+                    </div>
+                    <div class="progress-item">
+                        <span>모음 학습</span>
+                        <div id="vowels-check" class="progress-check"></div>
+                    </div>
+                    <div class="progress-item">
+                        <span>자음/모음 퀴즈</span>
+                        <div id="letter-quiz-check" class="progress-check"></div>
+                    </div>
+                    <div class="progress-item">
+                        <span>단어 읽기</span>
+                        <div id="word-quiz-check" class="progress-check"></div>
+                    </div>
+                </div>
+
+                <div style="background: #f0fdf4; border-radius: 16px; padding: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span style="color: #166534; font-weight: bold;">Total Progress</span>
+                        <span id="level-progress" style="color: #16a34a; font-size: 14px;">0/7</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div id="progress-fill" class="progress-fill" style="width: 0%;"></div>
+                    </div>
+                </div>
+                
+                <button id="level-up-btn" class="btn btn-yellow mt-4" style="display: none;">
+                    🎉 Level Up Available! 🎉
+                </button>
+            </div>
+
+            <div>
+                <div id="learn-consonants" class="menu-card">
+                    <div class="menu-card-content">
+                        <div class="menu-icon">🔤</div>
+                        <div class="menu-text">
+                            <div class="menu-title">Learn Consonants</div>
+                            <div class="menu-description">자음을 배워보세요</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="learn-vowels" class="menu-card">
+                    <div class="menu-card-content">
+                        <div class="menu-icon">🔠</div>
+                        <div class="menu-text">
+                            <div class="menu-title">Learn Vowels</div>
+                            <div class="menu-description">모음을 배워보세요</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="letter-quiz" class="menu-card locked">
+                    <div class="menu-card-content">
+                        <div class="menu-icon">🔒</div>
+                        <div class="menu-text">
+                            <div class="menu-title">Letter Quiz</div>
+                            <div class="menu-description">자음과 모음을 맞춰보세요</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="word-quiz" class="menu-card locked">
+                    <div class="menu-card-content">
+                        <div class="menu-icon">🔒</div>
+                        <div class="menu-text">
+                            <div class="menu-title">Word Quiz</div>
+                            <div class="menu-description">한국어 단어를 읽어보세요</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Learn Screen -->
+        <div id="learn-screen" class="screen">
+            <div class="header">
+                <button id="learn-back-btn" class="btn-icon">←</button>
+                <h1 id="learn-title">Learn Consonants</h1>
+                <div style="width: 48px;"></div>
+            </div>
+
+            <div class="card text-center">
+                <div class="turtle" style="width: 80px; height: 80px; margin-bottom: 32px;">
+                    <div class="turtle-body" style="width: 64px; height: 48px;">
+                        <div class="turtle-head">
+                            <div class="turtle-eye left"></div>
+                            <div class="turtle-eye right"></div>
+                            <div class="turtle-mouth"></div>
+                        </div>
+                        <div class="turtle-spot spot1"></div>
+                        <div class="turtle-spot spot2"></div>
+                        <div class="turtle-spot spot3"></div>
+                    </div>
+                </div>
+                
+                <div id="current-char" class="korean-char">ㄱ</div>
+                <p id="char-name" class="text-gray-600 mb-4">기역</p>
+                <p id="char-sound" style="color: #16a34a; font-weight: bold; margin-bottom: 24px;">[g/k]</p>
+
+                <button id="play-sound-btn" style="background: #22c55e; color: white; border: none; border-radius: 50%; padding: 16px; margin-bottom: 24px; cursor: pointer;">
+                    🔊
+                </button>
+
+                <button id="learn-next-btn" class="btn btn-primary">Next</button>
+            </div>
+
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span class="text-gray-600">Progress</span>
+                    <span id="learn-progress" style="color: #16a34a; font-weight: bold;">1/3</span>
+                </div>
+                <div class="progress-bar">
+                    <div id="learn-progress-fill" class="progress-fill" style="width: 33%;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quiz Screen -->
+        <div id="quiz-screen" class="screen">
+            <div class="header">
+                <button id="quiz-back-btn" class="btn-icon">←</button>
+                <h1>Letter Quiz</h1>
+                <div style="width: 48px;"></div>
+            </div>
+
+            <div class="card text-center">
+                <div class="turtle" style="width: 64px; height: 64px; margin-bottom: 24px;">
+                    <div class="turtle-body" style="width: 64px; height: 48px;">
+                        <div class="turtle-head">
+                            <div class="turtle-eye left"></div>
+                            <div class="turtle-eye right"></div>
+                            <div class="turtle-mouth"></div>
+                        </div>
+                        <div class="turtle-spot spot1"></div>
+                        <div class="turtle-spot spot2"></div>
+                        <div class="turtle-spot spot3"></div>
+                    </div>
+                </div>
+                
+                <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 24px;">
+                    <div id="quiz-char" style="font-size: 64px; font-weight: bold; color: #1f2937; margin-right: 16px;">ㄱ</div>
+                    <span style="color: #16a34a; font-size: 24px;">🔊</span>
+                </div>
+                <p class="text-gray-600">이 글자를 선택하세요</p>
+            </div>
+
+            <div id="quiz-options" class="quiz-options">
+                <!-- Options will be added by JavaScript -->
+            </div>
+
+            <div class="card mt-6">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span class="text-gray-600">Progress</span>
+                    <span id="quiz-progress" style="color: #16a34a; font-weight: bold;">1/6</span>
+                </div>
+                <div class="progress-bar">
+                    <div id="quiz-progress-fill" class="progress-fill" style="width: 16%;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quiz Result Screen -->
+        <div id="result-screen" class="screen">
+            <div style="padding-top: 80px;" class="text-center">
+                <div id="result-turtle" class="turtle" style="width: 160px; height: 160px; margin-bottom: 16px;">
+                    <div class="turtle-body" style="width: 64px; height: 48px;">
+                        <div class="turtle-head">
+                            <div class="turtle-eye left"></div>
+                            <div class="turtle-eye right"></div>
+                            <div id="result-mouth" class="turtle-mouth"></div>
+                        </div>
+                        <div class="turtle-spot spot1"></div>
+                        <div class="turtle-spot spot2"></div>
+                        <div class="turtle-spot spot3"></div>
+                    </div>
+                </div>
+                <h2 id="result-title" class="text-3xl font-bold text-gray-800 mb-4">Correct!</h2>
+                <p id="result-message" class="text-2xl text-gray-600 mb-8">잘했어요! 🎉</p>
+                <button id="result-continue-btn" class="btn btn-primary" style="display: none;">Continue</button>
+            </div>
+        </div>
+
+        <!-- Word Quiz Screen -->
+        <div id="word-quiz-screen" class="screen">
+            <div class="header">
+                <button id="word-quiz-back-btn" class="btn-icon">←</button>
+                <h1>Word Quiz</h1>
+                <div style="width: 48px;"></div>
+            </div>
+
+            <div class="card text-center">
+                <div class="turtle" style="width: 80px; height: 80px; margin-bottom: 32px;">
+                    <div class="turtle-body" style="width: 64px; height: 48px;">
+                        <div class="turtle-head">
+                            <div class="turtle-eye left"></div>
+                            <div class="turtle-eye right"></div>
+                            <div class="turtle-mouth"></div>
+                        </div>
+                        <div class="turtle-spot spot1"></div>
+                        <div class="turtle-spot spot2"></div>
+                        <div class="turtle-spot spot3"></div>
+                    </div>
+                </div>
+                
+                <div id="word-emoji" style="font-size: 96px; margin-bottom: 16px;">🇬🇭</div>
+                <div id="word-text" class="korean-char-small mb-4">가나</div>
+                <div style="background: #faf5ff; border-radius: 16px; padding: 16px; margin-bottom: 24px;">
+                    <p id="word-meaning" style="color: #7c3aed; font-weight: bold; font-size: 18px; margin-bottom: 8px;">Ghana</p>
+                    <p id="word-pronunciation" style="color: #a855f7;">[ga-na]</p>
+                </div>
+
+                <button id="word-play-sound-btn" style="background: #a855f7; color: white; border: none; border-radius: 50%; padding: 16px; margin-bottom: 24px; cursor: pointer;">
+                    🔊
+                </button>
+            </div>
+
+            <div class="card">
+                <h3 class="text-center font-bold text-gray-800 mb-4">글자 분해</h3>
+                <div id="word-components">
+                    <!-- Components will be added by JavaScript -->
+                </div>
+            </div>
+
+            <button id="word-next-btn" class="btn btn-secondary mt-6">Next Word</button>
+
+            <div class="card mt-4">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span class="text-gray-600">Progress</span>
+                    <span id="word-progress" style="color: #a855f7; font-weight: bold;">1/4</span>
+                </div>
+                <div class="progress-bar">
+                    <div id="word-progress-fill" class="progress-fill" style="width: 25%; background: #a855f7;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // App State
+        let currentScreen = 'home';
+        let currentLevel = 1;
+        let currentStep = 0;
+        let gameMode = 'consonants';
+        
+        let userProgress = {
+            completedLevels: 0,
+            totalPoints: 0,
+            consonantsCompleted: false,
+            vowelsCompleted: false,
+            letterQuizCompleted: false,
+            wordQuizCompleted: false
+        };
+
+        // Data
+        const learningLevels = [
+            {
+                level: 1,
+                consonants: [
+                    { char: 'ㄱ', sound: 'g/k', name: '기역' },
+                    { char: 'ㄴ', sound: 'n', name: '니은' },
+                    { char: 'ㄷ', sound: 'd/t', name: '디귿' }
+                ],
+                vowels: [
+                    { char: 'ㅏ', sound: 'a', name: '아' },
+                    { char: 'ㅓ', sound: 'eo', name: '어' },
+                    { char: 'ㅗ', sound: 'o', name: '오' }
+                ]
+            },
+            {
+                level: 2,
+                consonants: [
+                    { char: 'ㄹ', sound: 'r/l', name: '리을' },
+                    { char: 'ㅁ', sound: 'm', name: '미음' },
+                    { char: 'ㅂ', sound: 'b/p', name: '비읍' }
+                ],
+                vowels: [
+                    { char: 'ㅜ', sound: 'u', name: '우' },
+                    { char: 'ㅡ', sound: 'eu', name: '으' },
+                    { char: 'ㅣ', sound: 'i', name: '이' }
+                ]
+            },
+            {
+                level: 3,
+                consonants: [
+                    { char: 'ㅅ', sound: 's', name: '시옷' },
+                    { char: 'ㅇ', sound: 'ng/-', name: '이응' },
+                    { char: 'ㅈ', sound: 'j', name: '지읒' }
+                ],
+                vowels: [
+                    { char: 'ㅑ', sound: 'ya', name: '야' },
+                    { char: 'ㅕ', sound: 'yeo', name: '여' },
+                    { char: 'ㅛ', sound: 'yo', name: '요' }
+                ]
+            },
+            {
+                level: 4,
+                consonants: [
+                    { char: 'ㅊ', sound: 'ch', name: '치읓' },
+                    { char: 'ㅋ', sound: 'k', name: '키읔' },
+                    { char: 'ㅌ', sound: 't', name: '티읕' }
+                ],
+                vowels: [
+                    { char: 'ㅠ', sound: 'yu', name: '유' },
+                    { char: 'ㅢ', sound: 'ui', name: '의' },
+                    { char: 'ㅐ', sound: 'ae', name: '애' }
+                ]
+            },
+            {
+                level: 5,
+                consonants: [
+                    { char: 'ㅍ', sound: 'p', name: '피읖' },
+                    { char: 'ㅎ', sound: 'h', name: '히읗' }
+                ],
+                vowels: [
+                    { char: 'ㅔ', sound: 'e', name: '에' },
+                    { char: 'ㅖ', sound: 'ye', name: '예' },
+                    { char: 'ㅒ', sound: 'yae', name: '얘' }
+                ]
+            },
+            {
+                level: 6,
+                consonants: [
+                    { char: 'ㄲ', sound: 'kk', name: '쌍기역' },
+                    { char: 'ㄸ', sound: 'tt', name: '쌍디귿' },
+                    { char: 'ㅃ', sound: 'pp', name: '쌍비읍' }
+                ],
+                vowels: [
+                    { char: 'ㅘ', sound: 'wa', name: '와' },
+                    { char: 'ㅙ', sound: 'wae', name: '왜' },
+                    { char: 'ㅚ', sound: 'oe', name: '외' }
+                ]
+            },
+            {
+                level: 7,
+                consonants: [
+                    { char: 'ㅆ', sound: 'ss', name: '쌍시옷' },
+                    { char: 'ㅉ', sound: 'jj', name: '쌍지읒' }
+                ],
+                vowels: [
+                    { char: 'ㅝ', sound: 'wo', name: '워' },
+                    { char: 'ㅞ', sound: 'we', name: '웨' },
+                    { char: 'ㅟ', sound: 'wi', name: '위' }
+                ]
+            }
+        ];
+
+        const koreanWords = [
+            { word: '가나', meaning: 'Ghana', emoji: '🇬🇭', components: [['ㄱ', 'ㅏ'], ['ㄴ', 'ㅏ']], level: 1, pronunciation: 'ga-na' },
+            { word: '나가', meaning: 'go out', emoji: '🚪', components: [['ㄴ', 'ㅏ'], ['ㄱ', 'ㅏ']], level: 1, pronunciation: 'na-ga' },
+            { word: '다가', meaning: 'approach', emoji: '🏃', components: [['ㄷ', 'ㅏ'], ['ㄱ', 'ㅏ']], level: 1, pronunciation: 'da-ga' },
+            { word: '고고', meaning: 'go go', emoji: '🎉', components: [['ㄱ', 'ㅗ'], ['ㄱ', 'ㅗ']], level: 1, pronunciation: 'go-go' },
+            { word: '머리', meaning: 'head/hair', emoji: '💇', components: [['ㅁ', 'ㅓ'], ['ㄹ', 'ㅣ']], level: 2, pronunciation: 'meo-ri' },
+            { word: '누리', meaning: 'world', emoji: '🌍', components: [['ㄴ', 'ㅜ'], ['ㄹ', 'ㅣ']], level: 2, pronunciation: 'nu-ri' },
+            { word: '부모', meaning: 'parents', emoji: '👨‍👩‍👧‍👦', components: [['ㅂ', 'ㅜ'], ['ㅁ', 'ㅗ']], level: 2, pronunciation: 'bu-mo' },
+            { word: '바다', meaning: 'sea/ocean', emoji: '🌊', components: [['ㅂ', 'ㅏ'], ['ㄷ', 'ㅏ']], level: 2, pronunciation: 'ba-da' },
+            { word: '사자', meaning: 'lion', emoji: '🦁', components: [['ㅅ', 'ㅏ'], ['ㅈ', 'ㅏ']], level: 3, pronunciation: 'sa-ja' },
+            { word: '아기', meaning: 'baby', emoji: '👶', components: [['ㅇ', 'ㅏ'], ['ㄱ', 'ㅣ']], level: 3, pronunciation: 'a-gi' },
+            { word: '여우', meaning: 'fox', emoji: '🦊', components: [['ㅇ', 'ㅕ'], ['ㅇ', 'ㅜ']], level: 3, pronunciation: 'yeo-u' },
+            { word: '요리', meaning: 'cooking', emoji: '🍳', components: [['ㅇ', 'ㅛ'], ['ㄹ', 'ㅣ']], level: 3, pronunciation: 'yo-ri' },
+            { word: '차가', meaning: 'cold', emoji: '🧊', components: [['ㅊ', 'ㅏ'], ['ㄱ', 'ㅏ']], level: 4, pronunciation: 'cha-ga' },
+            { word: '카페', meaning: 'cafe', emoji: '☕', components: [['ㅋ', 'ㅏ'], ['ㅍ', 'ㅔ']], level: 4, pronunciation: 'ka-pe' },
+            { word: '타다', meaning: 'ride/burn', emoji: '🚗', components: [['ㅌ', 'ㅏ'], ['ㄷ', 'ㅏ']], level: 4, pronunciation: 'ta-da' }
+        ];
+
+        // Utility Functions
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            document.getElementById(screenId).classList.add('active');
+            currentScreen = screenId;
+        }
+
+        function updateProgressDisplay() {
+            document.getElementById('current-level').textContent = currentLevel;
+            document.getElementById('total-points').textContent = userProgress.totalPoints;
+            document.getElementById('level-progress').textContent = `${userProgress.completedLevels}/7`;
+            
+            const progressPercentage = (userProgress.completedLevels / 7) * 100;
+            document.getElementById('progress-fill').style.width = `${progressPercentage}%`;
+
+            // Update checkmarks
+            document.getElementById('consonants-check').className = 
+                `progress-check ${userProgress.consonantsCompleted ? 'completed' : ''}`;
+            document.getElementById('vowels-check').className = 
+                `progress-check ${userProgress.vowelsCompleted ? 'completed' : ''}`;
+            document.getElementById('letter-quiz-check').className = 
+                `progress-check ${userProgress.letterQuizCompleted ? 'completed' : ''}`;
+            document.getElementById('word-quiz-check').className = 
+                `progress-check ${userProgress.wordQuizCompleted ? 'completed' : ''}`;
+
+            // Update menu cards
+            updateMenuCards();
+            
+            // Check level up
+            if (checkLevelUp() && currentLevel < 7) {
+                document.getElementById('level-up-btn').style.display = 'block';
+            } else {
+                document.getElementById('level-up-btn').style.display = 'none';
+            }
+        }
+
+        function updateMenuCards() {
+            const consonantsCard = document.getElementById('learn-consonants');
+            const vowelsCard = document.getElementById('learn-vowels');
+            const letterQuizCard = document.getElementById('letter-quiz');
+            const wordQuizCard = document.getElementById('word-quiz');
+
+            // Update consonants card
+            consonantsCard.className = `menu-card ${userProgress.consonantsCompleted ? 'completed' : ''}`;
+            consonantsCard.querySelector('.menu-icon').textContent = userProgress.consonantsCompleted ? '✅' : '🔤';
+
+            // Update vowels card
+            vowelsCard.className = `menu-card ${userProgress.vowelsCompleted ? 'completed' : ''}`;
+            vowelsCard.querySelector('.menu-icon').textContent = userProgress.vowelsCompleted ? '✅' : '🔠';
+
+            // Update letter quiz card
+            const letterQuizUnlocked = userProgress.consonantsCompleted && userProgress.vowelsCompleted;
+            letterQuizCard.className = `menu-card ${userProgress.letterQuizCompleted ? 'completed' : letterQuizUnlocked ? '' : 'locked'}`;
+            letterQuizCard.querySelector('.menu-icon').textContent = userProgress.letterQuizCompleted ? '✅' : letterQuizUnlocked ? '❓' : '🔒';
+
+            // Update word quiz card
+            const wordQuizUnlocked = userProgress.letterQuizCompleted;
+            wordQuizCard.className = `menu-card ${userProgress.wordQuizCompleted ? 'completed' : wordQuizUnlocked ? '' : 'locked'}`;
+            wordQuizCard.querySelector('.menu-icon').textContent = userProgress.wordQuizCompleted ? '✅' : wordQuizUnlocked ? '📚' : '🔒';
+        }
+
+        function checkLevelUp() {
+            return userProgress.consonantsCompleted && 
+                   userProgress.vowelsCompleted && 
+                   userProgress.letterQuizCompleted && 
+                   userProgress.wordQuizCompleted;
+        }
+
+        function levelUp() {
+            if (currentLevel < 7) {
+                currentLevel++;
+                userProgress.completedLevels = Math.max(userProgress.completedLevels, currentLevel - 1);
+                userProgress.totalPoints += 200;
+                userProgress.consonantsCompleted = false;
+                userProgress.vowelsCompleted = false;
+                userProgress.letterQuizCompleted = false;
+                userProgress.wordQuizCompleted = false;
+                currentStep = 0;
+                updateProgressDisplay();
+                return true;
+            }
+            return false;
+        }
+
+        function playSound(text) {
+            console.log(`Playing sound: ${text}`);
+            // In a real app, you would play actual audio here
+        }
+
+        // Learn Screen Functions
+        function startLearn(mode) {
+            gameMode = mode;
+            currentStep = 0;
+            showScreen('learn-screen');
+            updateLearnScreen();
+        }
+
+        function updateLearnScreen() {
+            const currentLevelData = learningLevels[currentLevel - 1];
+            const items = gameMode === 'consonants' ? currentLevelData.consonants : currentLevelData.vowels;
+            const currentItem = items[currentStep];
+
+            if (!currentItem) {
+                completeLearnSection();
+                return;
+            }
+
+            document.getElementById('learn-title').textContent = 
+                `Learn ${gameMode === 'consonants' ? 'Consonants' : 'Vowels'}`;
+            document.getElementById('current-char').textContent = currentItem.char;
+            document.getElementById('char-name').textContent = currentItem.name;
+            document.getElementById('char-sound').textContent = `[${currentItem.sound}]`;
+            document.getElementById('learn-progress').textContent = `${currentStep + 1}/${items.length}`;
+            
+            const progressPercentage = ((currentStep + 1) / items.length) * 100;
+            document.getElementById('learn-progress-fill').style.width = `${progressPercentage}%`;
+
+            const isLast = currentStep >= items.length - 1;
+            document.getElementById('learn-next-btn').textContent = isLast ? 'Complete!' : 'Next';
+        }
+
+        function completeLearnSection() {
+            if (gameMode === 'consonants') {
+                userProgress.consonantsCompleted = true;
+                userProgress.totalPoints += 50;
+            } else {
+                userProgress.vowelsCompleted = true;
+                userProgress.totalPoints += 50;
+            }
+            updateProgressDisplay();
+            showScreen('home-screen');
+        }
+
+        // Quiz Screen Functions
+        let quizItems = [];
+        let currentQuizItem = null;
+
+        function startQuiz() {
+            currentStep = 0;
+            const currentLevelData = learningLevels[currentLevel - 1];
+            quizItems = [...currentLevelData.consonants, ...currentLevelData.vowels];
+            showScreen('quiz-screen');
+            updateQuizScreen();
+        }
+
+        function updateQuizScreen() {
+            if (currentStep >= quizItems.length) {
+                completeQuiz();
+                return;
+            }
+
+            currentQuizItem = quizItems[currentStep];
+            document.getElementById('quiz-char').textContent = currentQuizItem.char;
+            document.getElementById('quiz-progress').textContent = `${currentStep + 1}/${quizItems.length}`;
+            
+            const progressPercentage = ((currentStep + 1) / quizItems.length) * 100;
+            document.getElementById('quiz-progress-fill').style.width = `${progressPercentage}%`;
+
+            generateQuizOptions();
+        }
+
+        function generateQuizOptions() {
+            const allPossibleItems = learningLevels.flatMap(level => 
+                [...level.consonants, ...level.vowels]
+            );
+            
+            // Filter out current item and get random wrong answers
+            const wrongAnswers = allPossibleItems
+                .filter(item => item.char !== currentQuizItem.char)
+                .sort(() => Math.random() - 0.5)
+                .slice(0, 2);
+            
+            // Combine correct answer with wrong answers and shuffle
+            const options = [currentQuizItem, ...wrongAnswers]
+                .sort(() => Math.random() - 0.5);
+
+            const optionsContainer = document.getElementById('quiz-options');
+            optionsContainer.innerHTML = '';
+
+            options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.className = 'quiz-option';
+                button.textContent = option.char;
+                button.onclick = () => handleQuizAnswer(option);
+                optionsContainer.appendChild(button);
+            });
+        }
+
+        function handleQuizAnswer(answer) {
+            const isCorrect = answer.char === currentQuizItem.char;
+            showQuizResult(isCorrect);
+            
+            setTimeout(() => {
+                if (isCorrect) {
+                    currentStep++;
+                    if (currentStep >= quizItems.length) {
+                        completeQuiz();
+                    } else {
+                        showScreen('quiz-screen');
+                        updateQuizScreen();
+                    }
+                } else {
+                    showScreen('quiz-screen');
+                }
+            }, 1500);
+        }
+
+        function showQuizResult(isCorrect) {
+            showScreen('result-screen');
+            
+            document.getElementById('result-title').textContent = isCorrect ? 'Correct!' : 'Try Again!';
+            document.getElementById('result-message').textContent = isCorrect ? '잘했어요! 🎉' : '다시 해보세요! 💪';
+            
+            const mouth = document.getElementById('result-mouth');
+            mouth.className = isCorrect ? 'turtle-mouth' : 'turtle-mouth sad';
+            
+            const continueBtn = document.getElementById('result-continue-btn');
+            if (!isCorrect) {
+                continueBtn.style.display = 'block';
+            } else {
+                continueBtn.style.display = 'none';
+            }
+        }
+
+        function completeQuiz() {
+            userProgress.letterQuizCompleted = true;
+            userProgress.totalPoints += 100;
+            updateProgressDisplay();
+            showScreen('home-screen');
+        }
+
+        // Word Quiz Functions
+        let wordQuizItems = [];
+
+        function startWordQuiz() {
+            currentStep = 0;
+            wordQuizItems = koreanWords.filter(word => word.level <= currentLevel);
+            showScreen('word-quiz-screen');
+            updateWordQuizScreen();
+        }
+
+        function updateWordQuizScreen() {
+            if (currentStep >= wordQuizItems.length) {
+                completeWordQuiz();
+                return;
+            }
+
+            const currentWord = wordQuizItems[currentStep];
+            document.getElementById('word-emoji').textContent = currentWord.emoji;
+            document.getElementById('word-text').textContent = currentWord.word;
+            document.getElementById('word-meaning').textContent = currentWord.meaning;
+            document.getElementById('word-pronunciation').textContent = `[${currentWord.pronunciation}]`;
+            document.getElementById('word-progress').textContent = `${currentStep + 1}/${wordQuizItems.length}`;
+            
+            const progressPercentage = ((currentStep + 1) / wordQuizItems.length) * 100;
+            document.getElementById('word-progress-fill').style.width = `${progressPercentage}%`;
+
+            updateWordComponents(currentWord);
+
+            const isLast = currentStep >= wordQuizItems.length - 1;
+            document.getElementById('word-next-btn').textContent = isLast ? 'Complete!' : 'Next Word';
+        }
+
+        function updateWordComponents(word) {
+            const container = document.getElementById('word-components');
+            container.innerHTML = '';
+
+            word.components.forEach((syllable, index) => {
+                const componentDiv = document.createElement('div');
+                componentDiv.className = 'word-component';
+                
+                componentDiv.innerHTML = `
+                    <div class="component-visual">
+                        <div class="component-char consonant">${syllable[0]}</div>
+                        <span style="font-size: 20px;">+</span>
+                        <div class="component-char vowel">${syllable[1]}</div>
+                        <span style="font-size: 20px;">=</span>
+                        <div class="component-char result">${word.word[index]}</div>
+                    </div>
+                    <p class="component-text">${index + 1}번째 글자: ${word.word[index]}</p>
+                `;
+                
+                container.appendChild(componentDiv);
+            });
+        }
+
+        function completeWordQuiz() {
+            userProgress.wordQuizCompleted = true;
+            userProgress.totalPoints += 150;
+            updateProgressDisplay();
+            showScreen('home-screen');
+        }
+
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            updateProgressDisplay();
+
+            // Home screen menu clicks
+            document.getElementById('learn-consonants').onclick = () => {
+                if (!document.getElementById('learn-consonants').classList.contains('locked')) {
+                    startLearn('consonants');
+                }
+            };
+
+            document.getElementById('learn-vowels').onclick = () => {
+                if (!document.getElementById('learn-vowels').classList.contains('locked')) {
+                    startLearn('vowels');
+                }
+            };
+
+            document.getElementById('letter-quiz').onclick = () => {
+                if (!document.getElementById('letter-quiz').classList.contains('locked')) {
+                    startQuiz();
+                }
+            };
+
+            document.getElementById('word-quiz').onclick = () => {
+                if (!document.getElementById('word-quiz').classList.contains('locked')) {
+                    startWordQuiz();
+                }
+            };
+
+            // Level up button
+            document.getElementById('level-up-btn').onclick = levelUp;
+
+            // Back buttons
+            document.getElementById('learn-back-btn').onclick = () => showScreen('home-screen');
+            document.getElementById('quiz-back-btn').onclick = () => showScreen('home-screen');
+            document.getElementById('word-quiz-back-btn').onclick = () => showScreen('home-screen');
+
+            // Learn screen buttons
+            document.getElementById('learn-next-btn').onclick = () => {
+                const currentLevelData = learningLevels[currentLevel - 1];
+                const items = gameMode === 'consonants' ? currentLevelData.consonants : currentLevelData.vowels;
+                
+                if (currentStep < items.length - 1) {
+                    currentStep++;
+                    updateLearnScreen();
+                } else {
+                    completeLearnSection();
+                }
+            };
+
+            document.getElementById('play-sound-btn').onclick = () => {
+                const currentLevelData = learningLevels[currentLevel - 1];
+                const items = gameMode === 'consonants' ? currentLevelData.consonants : currentLevelData.vowels;
+                const currentItem = items[currentStep];
+                if (currentItem) {
+                    playSound(currentItem.char);
+                }
+            };
+
+            // Quiz result continue button
+            document.getElementById('result-continue-btn').onclick = () => {
+                showScreen('quiz-screen');
+                updateQuizScreen();
+            };
+
+            // Word quiz buttons
+            document.getElementById('word-next-btn').onclick = () => {
+                if (currentStep < wordQuizItems.length - 1) {
+                    currentStep++;
+                    updateWordQuizScreen();
+                } else {
+                    completeWordQuiz();
+                }
+            };
+
+            document.getElementById('word-play-sound-btn').onclick = () => {
+                if (wordQuizItems[currentStep]) {
+                    playSound(wordQuizItems[currentStep].word);
+                }
+            };
+        });
+    </script>
+</body>
+</html>
