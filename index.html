@@ -248,6 +248,37 @@
             cursor: pointer;
         }
 
+        .sound-btn {
+            background: #22c55e;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            padding: 16px;
+            margin-bottom: 24px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .sound-btn:hover {
+            background: #16a34a;
+            transform: scale(1.1);
+        }
+
+        .sound-btn:active {
+            transform: scale(0.9);
+        }
+
+        .sound-btn.playing {
+            animation: soundPulse 0.5s ease-in-out;
+        }
+
+        @keyframes soundPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); box-shadow: 0 0 20px rgba(34, 197, 94, 0.5); }
+            100% { transform: scale(1); }
+        }
+
         /* Header */
         .header {
             display: flex;
@@ -398,6 +429,25 @@
             text-align: center;
             font-size: 14px;
             color: #6b7280;
+        }
+
+        /* Audio Status */
+        .audio-status {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 1000;
+        }
+
+        .audio-status.show {
+            opacity: 1;
         }
 
         /* Responsive */
@@ -590,7 +640,7 @@
                 <p id="char-name" class="text-gray-600 mb-4">기역</p>
                 <p id="char-sound" style="color: #16a34a; font-weight: bold; margin-bottom: 24px;">[g/k]</p>
 
-                <button id="play-sound-btn" style="background: #22c55e; color: white; border: none; border-radius: 50%; padding: 16px; margin-bottom: 24px; cursor: pointer;">
+                <button id="play-sound-btn" class="sound-btn">
                     🔊
                 </button>
 
@@ -632,7 +682,7 @@
                 
                 <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 24px;">
                     <div id="quiz-char" style="font-size: 64px; font-weight: bold; color: #1f2937; margin-right: 16px;">ㄱ</div>
-                    <span style="color: #16a34a; font-size: 24px;">🔊</span>
+                    <button id="quiz-sound-btn" class="sound-btn" style="margin: 0; padding: 12px;">🔊</button>
                 </div>
                 <p class="text-gray-600">이 글자를 선택하세요</p>
             </div>
@@ -702,7 +752,7 @@
                     <p id="word-pronunciation" style="color: #a855f7;">[ga-na]</p>
                 </div>
 
-                <button id="word-play-sound-btn" style="background: #a855f7; color: white; border: none; border-radius: 50%; padding: 16px; margin-bottom: 24px; cursor: pointer;">
+                <button id="word-play-sound-btn" class="sound-btn" style="background: #a855f7;">
                     🔊
                 </button>
             </div>
@@ -728,6 +778,9 @@
         </div>
     </div>
 
+    <!-- Audio Status Indicator -->
+    <div id="audio-status" class="audio-status">🔊 Playing...</div>
+
     <script>
         // App State
         let currentScreen = 'home';
@@ -743,6 +796,120 @@
             letterQuizCompleted: false,
             wordQuizCompleted: false
         };
+
+        // Audio System
+        let speechSynthesis = window.speechSynthesis;
+        let koreanVoice = null;
+
+        // Initialize Korean voice (prioritizing Korean female voices)
+        function initializeVoice() {
+            const voices = speechSynthesis.getVoices();
+            
+            if (voices.length === 0) {
+                return;
+            }
+            
+            console.log('Available voices:', voices.map(v => `${v.name} (${v.lang})`));
+            
+            // Priority 1: Microsoft Heami (Korean female) - 최우선
+            koreanVoice = voices.find(voice => voice.name.includes('Heami'));
+            
+            // Priority 2: Any Korean voice
+            if (!koreanVoice) {
+                koreanVoice = voices.find(voice => voice.lang === 'ko-KR');
+            }
+            
+            // Priority 3: UK English Female
+            if (!koreanVoice) {
+                koreanVoice = voices.find(voice => voice.name.includes('UK English Female'));
+            }
+            
+            // Priority 4: Any female voice
+            if (!koreanVoice) {
+                koreanVoice = voices.find(voice => 
+                    voice.name.includes('Female') || voice.name.includes('Samantha') || 
+                    voice.name.includes('Victoria') || voice.name.includes('Karen')
+                );
+            }
+            
+            // Last resort: first available voice
+            if (!koreanVoice) {
+                koreanVoice = voices[0];
+            }
+            
+            console.log('Selected voice:', koreanVoice ? koreanVoice.name : 'None');
+        }
+
+        // Initialize voice when voices are loaded
+        speechSynthesis.addEventListener('voiceschanged', initializeVoice);
+        
+        // Try to initialize immediately
+        setTimeout(initializeVoice, 100);
+
+        function showAudioStatus(text) {
+            const status = document.getElementById('audio-status');
+            status.textContent = `🔊 ${text}`;
+            status.classList.add('show');
+            setTimeout(() => {
+                status.classList.remove('show');
+            }, 2000);
+        }
+
+        function playSound(text, language = 'ko') {
+            try {
+                // Stop any currently playing speech
+                speechSynthesis.cancel();
+                
+                // Make sure we have a voice
+                if (!koreanVoice) {
+                    initializeVoice();
+                }
+                
+                if (!koreanVoice) {
+                    showAudioStatus('No voice available');
+                    return;
+                }
+                
+                // Create utterance
+                const utterance = new SpeechSynthesisUtterance(text);
+                
+                // Set voice and language
+                utterance.voice = koreanVoice;
+                utterance.lang = language === 'ko' ? 'ko-KR' : 'en-US';
+                
+                // Set speech parameters - 속도 0.9로 설정
+                utterance.rate = 0.9; // 속도 0.9
+                utterance.pitch = 1.0; // 자연스러운 음조
+                utterance.volume = 1.0;
+                
+                console.log('Playing with voice:', koreanVoice.name);
+                
+                // Add visual feedback
+                const soundButtons = document.querySelectorAll('.sound-btn');
+                soundButtons.forEach(btn => btn.classList.add('playing'));
+                
+                // Show status
+                showAudioStatus(`🎵 ${koreanVoice.name}: ${text}`);
+                
+                // Event handlers
+                utterance.onend = () => {
+                    soundButtons.forEach(btn => btn.classList.remove('playing'));
+                };
+                
+                utterance.onerror = (event) => {
+                    console.error('Speech error:', event);
+                    soundButtons.forEach(btn => btn.classList.remove('playing'));
+                    showAudioStatus('Audio error');
+                };
+                
+                // Speak
+                speechSynthesis.speak(utterance);
+                
+            } catch (error) {
+                console.error('Error playing sound:', error);
+                showAudioStatus('Audio failed');
+            }
+        }
 
         // Data
         const learningLevels = [
@@ -939,11 +1106,6 @@
                 return true;
             }
             return false;
-        }
-
-        function playSound(text) {
-            console.log(`Playing sound: ${text}`);
-            // In a real app, you would play actual audio here
         }
 
         // Learn Screen Functions
@@ -1200,12 +1362,25 @@
                 }
             };
 
+            // Sound buttons
             document.getElementById('play-sound-btn').onclick = () => {
                 const currentLevelData = learningLevels[currentLevel - 1];
                 const items = gameMode === 'consonants' ? currentLevelData.consonants : currentLevelData.vowels;
                 const currentItem = items[currentStep];
                 if (currentItem) {
                     playSound(currentItem.char);
+                }
+            };
+
+            document.getElementById('quiz-sound-btn').onclick = () => {
+                if (currentQuizItem) {
+                    playSound(currentQuizItem.char);
+                }
+            };
+
+            document.getElementById('word-play-sound-btn').onclick = () => {
+                if (wordQuizItems[currentStep]) {
+                    playSound(wordQuizItems[currentStep].word);
                 }
             };
 
@@ -1222,12 +1397,6 @@
                     updateWordQuizScreen();
                 } else {
                     completeWordQuiz();
-                }
-            };
-
-            document.getElementById('word-play-sound-btn').onclick = () => {
-                if (wordQuizItems[currentStep]) {
-                    playSound(wordQuizItems[currentStep].word);
                 }
             };
         });
